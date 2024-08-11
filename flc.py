@@ -1,8 +1,9 @@
 #
-# flc.py - Посчитать количество строк во всех файлах в каталоге и подкаталогах.
+# flc.py - Посчитать количество строк во всех файлах в папке.
 #
 
 import os
+import sys
 
 def count_lines_in_directory(directory: str, self_name: str, format: str) -> int:
     format = [format] if not isinstance(format, list) else format
@@ -19,10 +20,10 @@ def count_lines_in_directory(directory: str, self_name: str, format: str) -> int
     return total_lines
 
 # Считаем:
-total_lines = count_lines_in_directory(
-    "./",            # Путь до папки где надо посчитать.
-    "flc.py",        # Название этого файла (чтобы не посчитать строки в этом файле).
-    [".py", ".pyx"]  # Список расширений форматов файлов.
-)
+root_directory    = "./"             # Путь до папки где надо посчитать.
+name_of_this_file = "flc.py"         # Название этого файла.
+file_format       = [".py", ".pyx"]  # Форматы файлов.
+if len(sys.argv) > 1: total_lines = count_lines_in_directory(sys.argv[1], name_of_this_file, sys.argv[2:])
+else: total_lines = count_lines_in_directory(root_directory, name_of_this_file, file_format)
 
 print(f"\nTotal lines in all files: {total_lines}")
