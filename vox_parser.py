@@ -1,10 +1,15 @@
 #
 # vox_parser.py - Создаёт функцию для парсинга воксельного файла от MagicaVoxel а также приведены примеры использования.
 #
+# ! КОД ПРЕДНАЗНАЧЕН ДЛЯ ВЕРСИИ MagicaVoxel (0.99.7.1) !
+#
 
 
 # Получить данные из ".vox" файла:
-def load_vox_file(path: str) -> dict:
+def load_vox_file(path: str, z_up_to_y_up: bool = True) -> dict:
+    import struct
+    import numpy as np
+
     # Структура получаемых данных:
     data = {
         "sizes":     [],  # Список размеров для каждой модели [X, Y, Z].
@@ -16,8 +21,6 @@ def load_vox_file(path: str) -> dict:
 
     # Читаем файл:
     with open(path, "rb") as vox:
-        import struct
-
         # Утвердить что это VOX файл:
         assert (struct.unpack("<4c", vox.read(4)) == (b"V", b"O", b"X", b" "))
 
@@ -43,6 +46,8 @@ def load_vox_file(path: str) -> dict:
             # Размер модели:
             if name == "SIZE":
                 size = struct.unpack("<3i", vox.read(12))
+                # Меняем Z и Y местами, потому что MagicaVoxel использует Z-Up координаты а не Y-Up как в OpenGL:
+                if z_up_to_y_up: size = size[0], size[2], size[1]
                 data["sizes"].append(size)
 
             # Воксели:
@@ -50,9 +55,9 @@ def load_vox_file(path: str) -> dict:
                 num_voxels, = struct.unpack("<i", vox.read(4))
                 model_voxels = []
                 for voxel in range(num_voxels):
-                    voxel_data = list(struct.unpack("<4B", vox.read(4)))
+                    voxel_data = struct.unpack("<4B", vox.read(4))
                     # Меняем Z и Y местами, потому что MagicaVoxel использует Z-Up координаты а не Y-Up как в OpenGL:
-                    voxel_data[1], voxel_data[2] = voxel_data[2], voxel_data[1]
+                    if z_up_to_y_up: voxel_data = voxel_data[0], voxel_data[2], voxel_data[1], voxel_data[3]
                     model_voxels.append(voxel_data)
                 data["voxels"].append(model_voxels)
 
@@ -123,20 +128,25 @@ def load_vox_file(path: str) -> dict:
 
 
 # Тестируем функцию загружая файл:
+import time
+t = time.time()
+# В функции есть параметр z_up_to_y_up. Если его поставить в True, то модель будет пересена в систему координат OpenGL.
+# Но эта конвертация замедлит функцию в ~1.37 раз. [ load_vox_file("file.vox") | load_vox_file("file.vox", True) ].
 voxel_data = load_vox_file("test.vox")
+print(f"Parsed in: {time.time()-t}\n")
 
 # Размеры всех моделей в формате [X, Y, Z]:
-print(f"\nSizes: {voxel_data['sizes']}")
+print(f"Sizes: {voxel_data['sizes']}\n")
 
 # Количество не пустых вокселей в каждой модели:
-print(f"\nCount: {voxel_data['count']}")
+print(f"Count: {voxel_data['count']}\n")
 
 # Список списков вокселей. Каждый элемент списка - модель в виде списка значений вокселя.
 # Воксель представляет из себя [X, Y, Z, I] структуру, где I это индекс от 0 до 255 в списке материалов и палитры цвета:
-print(f"\nVoxels: {voxel_data['voxels']}")
+print(f"Voxels: {voxel_data['voxels']}\n")
 
 # Палитра (256 цветов):
-print(f"\nPalette: {voxel_data['palette']}")
+print(f"Palette: {voxel_data['palette']}\n")
 
 # Материалы (256 штук):
 """ Примерно так выглядит структура материала (это словарь):
@@ -154,7 +164,22 @@ print(f"\nPalette: {voxel_data['palette']}")
         'ldr': 0.0
     }
 """
-print(f"\nMaterials: {voxel_data['materials']}")
+print(f"Materials: {voxel_data['materials']}\n")
+
+
+# Получаем цвет вокселя:
+# ["voxels"][id модели][номер вокселя в списке][последний элемент обозначающий индекс материала и палитры]:
+vox_mat_id = voxel_data["voxels"][0][0][-1]  # Тут мы получили id палитры и материала вокселя.
+
+# Получили цвет вокселя:
+color = voxel_data["palette"][vox_mat_id]  # R, G, B, A.
+
+# Получили материал вокселя:
+material = voxel_data["materials"][vox_mat_id]  # Dict type.
+
+# Выводим полученный цвет и материал:
+print(f"Color: {color}\n")
+print(f"Material: {material}")
 
 
 # Получаем цвет вокселя:
