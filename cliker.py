@@ -4,10 +4,9 @@
 
 
 # Импортируем:
-if True:
-    import time
-    import mouse
-    import keyboard
+import time
+import mouse
+import keyboard
 
 
 # Параметры:
@@ -17,7 +16,7 @@ hotkey = "num -"  # Горячая клавиша на клавиатуре.
 exit_k = "num *"  # Выход из автокликера.
 
 
-# Внутренние переменные:
+# Внутренние переменные:-
 is_ext = False  # Выйти ли из автокликера.
 work   = False  # Включен ли автокликер.
 
