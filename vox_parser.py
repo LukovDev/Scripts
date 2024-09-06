@@ -131,7 +131,7 @@ def load_vox_file(path: str, z_up_to_y_up: bool = True) -> dict:
 import time
 t = time.time()
 # В функции есть параметр z_up_to_y_up. Если его поставить в True, то модель будет пересена в систему координат OpenGL.
-# Но эта конвертация замедлит функцию в ~1.37 раз. [ load_vox_file("file.vox") | load_vox_file("file.vox", True) ].
+# Но эта конвертация замедлит функцию в ~1.37 раз. Не критично, но имейте в виду.
 voxel_data = load_vox_file("test.vox")
 print(f"Parsed in: {time.time()-t}\n")
 
