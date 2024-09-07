@@ -8,7 +8,6 @@
 # Получить данные из ".vox" файла:
 def load_vox_file(path: str, z_up_to_y_up: bool = True) -> dict:
     import struct
-    import numpy as np
 
     # Структура получаемых данных:
     data = {
