@@ -6,7 +6,7 @@
 
 
 # Получить данные из ".vox" файла:
-def load_vox_file(path: str, z_up_to_y_up: bool = True) -> dict:
+def parse_vox_file(path: str, z_up_to_y_up: bool = True) -> dict:
     import struct
 
     # Структура получаемых данных:
@@ -55,8 +55,9 @@ def load_vox_file(path: str, z_up_to_y_up: bool = True) -> dict:
                 model_voxels = []
                 for voxel in range(num_voxels):
                     voxel_data = struct.unpack("<4B", vox.read(4))
-                    # Меняем Z и Y местами, потому что MagicaVoxel использует Z-Up координаты а не Y-Up как в OpenGL:
-                    if z_up_to_y_up: voxel_data = voxel_data[0], voxel_data[2], voxel_data[1], voxel_data[3]
+                    # Вращаем и отражаем модель, так как MagicaVoxel использует Z-Up координаты а не Y-Up как в OpenGL:
+                    if z_up_to_y_up:
+                        voxel_data = data["sizes"][-1][0]-1-voxel_data[1], voxel_data[2], voxel_data[0], voxel_data[3]
                     model_voxels.append(voxel_data)
                 data["voxels"].append(model_voxels)
 
@@ -99,7 +100,7 @@ def load_vox_file(path: str, z_up_to_y_up: bool = True) -> dict:
                     elif mat_prps_type == "media":  # Проверяем на параметр cloud (под флагом media).
                         mat_type = "cloud"
 
-                # Преобразуем параметры материала в нормальный вид (тип материала и 10 параметров):
+                # Преобразуем параметры материала в нормальный вид (название материала и 10 параметров):
                 material_properties = {
                     "type":  mat_type,                                                        # Тип материала.
                     "rough": 0.1 if "_rough" not in mat_prps else float(mat_prps["_rough"]),  # Roughness.
@@ -123,7 +124,13 @@ def load_vox_file(path: str, z_up_to_y_up: bool = True) -> dict:
     # Указываем количество непустых вокселей для каждой модели:
     data["count"] = [len(data["voxels"][i]) for i in range(len(data["voxels"]))]
 
-    return data
+    return [{
+        "size": data["sizes"][i],
+        "count": data["count"][i],
+        "voxels": data["voxels"][i],
+        "palette": data["palette"][i],
+        "material": data["materials"][i],
+    } for i in range(len(data["sizes"]))]
 
 
 # Тестируем функцию загружая файл:
@@ -131,21 +138,24 @@ import time
 t = time.time()
 # В функции есть параметр z_up_to_y_up. Если его поставить в True, то модель будет пересена в систему координат OpenGL.
 # Но эта конвертация замедлит функцию в ~1.37 раз. Не критично, но имейте в виду.
-voxel_data = load_vox_file("test.vox")
+voxel_data = parse_vox_file("voxel.vox")
 print(f"Parsed in: {time.time()-t}\n")
 
-# Размеры всех моделей в формате [X, Y, Z]:
-print(f"Sizes: {voxel_data['sizes']}\n")
+# Выберем одну модель:
+voxel_model = voxel_data[0]
 
-# Количество не пустых вокселей в каждой модели:
-print(f"Count: {voxel_data['count']}\n")
+# Размер модели в формате [X, Y, Z]:
+print(f"Size: {voxel_model['size']}\n")
 
-# Список списков вокселей. Каждый элемент списка - модель в виде списка значений вокселя.
+# Количество не пустых вокселей в модели:
+print(f"Count: {voxel_model['count']}\n")
+
+# Список вокселей. Модель в виде списка значений вокселя.
 # Воксель представляет из себя [X, Y, Z, I] структуру, где I это индекс от 0 до 255 в списке материалов и палитры цвета:
-print(f"Voxels: {voxel_data['voxels']}\n")
+print(f"Voxels: {voxel_model['voxels']}\n")
 
 # Палитра (256 цветов):
-print(f"Palette: {voxel_data['palette']}\n")
+print(f"Palette: {voxel_model['palette']}\n")
 
 # Материалы (256 штук):
 """ Примерно так выглядит структура материала (это словарь):
@@ -163,18 +173,16 @@ print(f"Palette: {voxel_data['palette']}\n")
         'ldr': 0.0
     }
 """
-print(f"Materials: {voxel_data['materials']}\n")
-
 
 # Получаем цвет вокселя:
-# ["voxels"][id модели][номер вокселя в списке][последний элемент обозначающий индекс материала и палитры]:
-vox_mat_id = voxel_data["voxels"][0][0][-1]  # Тут мы получили id палитры и материала вокселя.
+# ["voxels"][номер вокселя в списке][последний элемент обозначающий индекс материала и палитры]:
+vox_mat_id = voxel_model["voxels"][0][-1]  # Тут мы получили id палитры и материала вокселя.
 
 # Получили цвет вокселя:
-color = voxel_data["palette"][vox_mat_id]  # R, G, B, A.
+color = voxel_model["palette"]  # R, G, B, A.
 
 # Получили материал вокселя:
-material = voxel_data["materials"][vox_mat_id]  # Dict type.
+material = voxel_model["material"]  # Dict type.
 
 # Выводим полученный цвет и материал:
 print(f"Color: {color}\n")
@@ -186,7 +194,7 @@ print(f"Material: {material}")
 """ Это можно сделать так:
     
     # Предварительно создаём словарь вокселей. (Можете вынести в отдельную функцию):
-    voxels = voxel_data["voxels"][<Номер модели. Например: 0>]
+    voxels = voxel_model["voxels"]
     voxel_dict = {}
     for voxel in voxels:
         x, y, z, m_id = voxel
