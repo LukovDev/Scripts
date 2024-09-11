@@ -56,8 +56,7 @@ def parse_vox_file(path: str, z_up_to_y_up: bool = True) -> dict:
                 for voxel in range(num_voxels):
                     voxel_data = struct.unpack("<4B", vox.read(4))
                     # Вращаем и отражаем модель, так как MagicaVoxel использует Z-Up координаты а не Y-Up как в OpenGL:
-                    if z_up_to_y_up:
-                        voxel_data = data["sizes"][-1][0]-1-voxel_data[1], voxel_data[2], voxel_data[0], voxel_data[3]
+                    if z_up_to_y_up: voxel_data = voxel_data[1], voxel_data[2], voxel_data[0], voxel_data[3]
                     model_voxels.append(voxel_data)
                 data["voxels"].append(model_voxels)
 
