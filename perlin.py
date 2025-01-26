@@ -110,7 +110,7 @@ def perlin_noise_2(x: float, y: float, stretch: float, tilt: float, octaves: int
     frequency = 1.0
 
     for _ in range(octaves):
-        total += stretched_noise(x, y, stretch, tilt, seed) * amplitude
+        total += stretched_noise(x * frequency, y * frequency, stretch, tilt, seed) * amplitude
         max_value += amplitude
         amplitude *= persistence
         frequency *= lacunarity
