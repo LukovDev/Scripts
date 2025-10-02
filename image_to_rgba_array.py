@@ -24,7 +24,7 @@ def convert(image_path, output_path, var_name="embedded_icon") -> None:
 
     c_code = f"""//
 // {output_path} - Встроенное RGBA изображение ({width}x{height}).
-// Сгенерировано: By LukovDev 2025.
+// Сгенерировано: image_to_rgba_array.py | By LukovDev 2025.
 //
 
 
